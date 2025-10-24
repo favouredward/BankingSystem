@@ -1,0 +1,229 @@
+﻿# 🏦 BankingSystem API
+
+A modular **.NET 8 Web API** that simulates a secure banking platform for handling **account creation, deposits, withdrawals, transfers, and transaction history**.  
+It follows a **Clean Architecture** with **CQRS + MediatR**, **Entity Framework Core**, **JWT Authentication**, **Serilog logging**, and **Redis caching** for optimal scalability and maintainability.
+
+---
+
+## 📚 Table of Contents
+
+1. [Architecture Overview](#architecture-overview)
+2. [Tech Stack](#tech-stack)
+3. [Project Structure](#project-structure)
+4. [Setup Instructions](#setup-instructions)
+5. [Authentication](#authentication)
+6. [API Endpoints](#api-endpoints)
+7. [Caching](#caching)
+8. [Error Handling](#error-handling)
+9. [Logging](#logging)
+10. [Testing](#testing)
+11. [Contributing](#contributing)
+12. [License](#license)
+
+---
+
+## 🧱 Architecture Overview
+
+This API follows **Clean Architecture principles** to ensure separation of concerns and high testability.
+
+BankingSystem/
+│
+├── BankingSystem.API → Presentation layer (controllers, middleware)
+├── BankingSystem.Application → CQRS logic, handlers, MediatR commands/queries
+├── BankingSystem.Domain → Entities, Enums, DTOs (pure domain logic)
+├── BankingSystem.Infrastructure → EF Core, Repositories, Services, Data context
+└── BankingSystem.Tests → xUnit-based unit tests for all core features
+
+yaml
+Copy code
+
+Key Patterns:
+- **CQRS + MediatR** for request handling
+- **Repository Pattern** for data persistence
+- **Dependency Injection** for modularity
+- **Redis caching** for performance optimization
+
+---
+
+## ⚙️ Tech Stack
+
+| Component | Technology |
+|------------|-------------|
+| **Framework** | .NET 8 Web API |
+| **Database** | SQL Server (EF Core) |
+| **Authentication** | JWT (ASP.NET Identity) |
+| **Caching** | Redis |
+| **Logging** | Serilog |
+| **Testing** | xUnit, Moq, FluentAssertions |
+
+---
+
+## 🚀 Setup Instructions
+
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/favouredward/BankingSystem.git
+cd BankingSystem
+2️⃣ Configure Database & Redis
+Ensure you have SQL Server and Redis running locally.
+Update your connection strings in appsettings.json:
+
+json
+Copy code
+"ConnectionStrings": {
+  "DefaultConnection": "Server=YOUR_SERVER;Database=bankingsystemdb;Integrated Security=True;TrustServerCertificate=True;",
+  "RedisConnection": "localhost:6379"
+}
+3️⃣ Apply Migrations
+bash
+Copy code
+cd BankingSystem.API
+dotnet ef database update
+4️⃣ Run the Application
+bash
+Copy code
+dotnet run
+Visit https://localhost:5001/swagger to view the interactive API documentation.
+
+🔐 Authentication
+The system uses ASP.NET Identity + JWT for user management.
+
+🔸 Register a New User
+POST /api/Auth/register
+
+json
+Copy code
+{
+  "email": "user@example.com",
+  "password": "StrongPassword123!"
+}
+🔸 Login and Retrieve JWT Token
+POST /api/Auth/login
+
+json
+Copy code
+{
+  "email": "user@example.com",
+  "password": "StrongPassword123!"
+}
+🔸 Use Token for Authorization
+Include the token in your requests:
+
+makefile
+Copy code
+Authorization: Bearer <your_token_here>
+🧾 API Endpoints
+👤 Authentication
+Method	Endpoint	Description
+POST	/api/Auth/register	Register new user
+POST	/api/Auth/login	Authenticate user and return JWT
+
+🏦 Accounts
+Method	Endpoint	Description	Auth Required
+POST	/api/Accounts/create	Create new bank account	✅
+GET	/api/Accounts/{accountId}	Get account details	✅
+GET	/api/Accounts/number/{accountNumber}	Get account by account number	✅
+GET	/api/Accounts/{accountId}/transactions	Get transaction history	✅
+
+💰 Transactions
+Method	Endpoint	Description	Auth Required
+POST	/api/Transactions/deposit	Deposit funds into account	✅
+POST	/api/Transactions/withdraw	Withdraw funds from account	✅
+POST	/api/Transactions/transfer	Transfer funds between accounts	✅
+
+🧠 Caching
+Redis is used to speed up frequent queries:
+
+GetAccountDetailsQueryHandler caches account details for 5 minutes
+
+GetTransactionHistoryQueryHandler caches transactions for 3 minutes
+
+Configuration example (appsettings.json):
+
+json
+Copy code
+"ConnectionStrings": {
+  "RedisConnection": "localhost:6379"
+}
+Redis cache keys:
+
+css
+Copy code
+Account_{AccountId}
+transactions:{AccountId}:{UserId}
+🚨 Error Handling
+Global exception handling is done via a custom middleware (ExceptionMiddleware.cs).
+
+Example error response:
+
+json
+Copy code
+{
+  "statusCode": 500,
+  "message": "An unexpected error occurred. Please try again later.",
+  "details": "Account not found or access denied."
+}
+📜 Logging
+The project uses Serilog for structured logging.
+Logs appear in the console and can easily be configured to write to files, databases, or external sinks.
+
+Configuration snippet:
+
+csharp
+Copy code
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .Enrich.FromLogContext()
+    .CreateLogger();
+🧪 Testing
+Unit tests are written using xUnit, Moq, and FluentAssertions.
+Run all tests with:
+
+bash
+Copy code
+dotnet test
+Test coverage includes:
+
+✅ Account creation
+
+✅ Deposits / Withdrawals / Transfers
+
+✅ Query Handlers (account details, transaction history)
+
+✅ Error and edge case handling
+
+🧰 Example Workflows
+Create Account
+Register a user
+
+Login to get token
+
+Send POST /api/Accounts/create with JWT in header
+
+Deposit / Withdraw / Transfer
+Use POST endpoints with:
+
+json
+Copy code
+{
+  "accountNumber": "1234567890",
+  "amount": 500.00
+}
+🤝 Contributing
+Contributions are welcome!
+
+Fork the repo
+
+Create a new branch (feature/xyz)
+
+Commit your changes
+
+Submit a Pull Request 🎉
+
+📄 License
+This project is licensed under the MIT License.
+
+👨‍💻 Author
+Edward Favour
+📧 edwardfav.dev@example.com
+💼 GitHub: favouredward

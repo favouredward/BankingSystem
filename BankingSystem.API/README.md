@@ -1,151 +1,201 @@
-BankingSystem API
+﻿:
 
-The BankingSystem API is a secure, layered solution built on .NET 9, implementing a Clean Architecture (Domain, Application, Infrastructure, API). It features a robust, transaction-based banking core, secured by JWT authentication and managed by MediatR.
+🏦 Banking System API
 
-?? Setup & Installation
+A Secure, Scalable .NET 8 Banking Backend with CQRS, JWT Authentication, and EF Core
 
-1. Prerequisites
+🚀 Overview
 
-.NET 9 SDK (or later)
+The Banking System API simulates core banking operations — account creation, deposits, withdrawals, and transfers — using a clean, modular architecture built on .NET 8.
 
-SQL Server (LocalDB or Docker instance)
+It implements:
 
-Redis (Required for Caching/Session, e.g., via Docker)
+CQRS Pattern using MediatR
 
-2. Configure Connection Strings
+JWT Authentication with ASP.NET Core Identity
 
-Update the appsettings.json file in the BankingSystem.Api project with your local configurations:
+EF Core + SQL Server for persistence
+
+Serilog for structured logging
+
+Redis for caching (registered for performance)
+
+Mock External Payment Integration (easily extendable)
+
+🧱 Project Architecture
+BankingSystem.sln
+│
+├── BankingSystem.API           → Controllers, DI setup, Swagger, JWT, Serilog
+├── BankingSystem.Application   → Commands, Queries, Handlers, Interfaces
+├── BankingSystem.Domain        → Entities, DTOs, Enums, Business Rules
+├── BankingSystem.Infrastructure→ EF Core DbContext, Repositories, Services
+└── BankingSystem.Tests         → Unit tests (xUnit)
+
+🧠 Core Technologies
+
+.NET 8 / ASP.NET Core Web API
+
+Entity Framework Core + SQL Server
+
+ASP.NET Identity + JWT Authentication
+
+Serilog (logging)
+
+Redis (caching)
+
+MediatR (CQRS + decoupling)
+
+Swagger / OpenAPI (API documentation)
+
+⚙️ Setup Instructions
+1️⃣ Clone the Repository
+git clone https://github.com/favouredward/BankingSystem.git
+cd BankingSystem
+
+2️⃣ Configure the Database
+
+Update the connection string in appsettings.json:
+
+"ConnectionStrings": {
+  "DefaultConnection": "Server=YOUR_SERVER;Database=BankingSystemDB;Trusted_Connection=True;TrustServerCertificate=True"
+}
+
+3️⃣ Configure JWT Settings
+
+In appsettings.json:
+
+"JwtSettings": {
+  "Secret": "ReplaceThisWithA256BitSecretKey",
+  "Issuer": "BankingSystemAPI",
+  "Audience": "BankingSystemClient",
+  "ExpiryMinutes": 60
+}
+
+4️⃣ Run EF Core Migrations
+cd BankingSystem.API
+dotnet ef migrations add InitialCreate -p ../BankingSystem.Infrastructure -s .
+dotnet ef database update -p ../BankingSystem.Infrastructure -s .
+
+5️⃣ Run the Application
+dotnet run --project BankingSystem.API
+
+
+The API will start at:
+👉 https://localhost:5001 or http://localhost:5000
+
+🔐 Authentication
+
+The API uses JWT Bearer tokens with ASP.NET Core Identity.
+
+Register
+POST /api/auth/register
 
 {
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=BankingSystemDb;Trusted_Connection=True;MultipleActiveResultSets=true",
-    "RedisConnection": "localhost:6379"
-  },
-  "JwtSettings": {
-    "Secret": "[YOUR_LONG_SECRET_KEY_HERE_MIN_16_CHARS]", 
-    "Issuer": "BankingSystemAPI",
-    "Audience": "BankingSystemClient"
-  }
+  "email": "user@example.com",
+  "password": "StrongPassword123!"
 }
 
 
-3. Build and Database Migration
-
-From the solution root directory (C:\Users\LENOVO\source\BankingSystem>):
-
-Restore & Build:
-
-dotnet restore
-dotnet build
-
-
-Apply Database Migrations (This creates the Identity, Accounts, and Transactions tables):
-
-dotnet ef database update --project BankingSystem.Infrastructure --startup-project BankingSystem.Api
-
-
-4. Run the API
-
-dotnet run --project BankingSystem.Api
-
-
-The API will typically start on http://localhost:5000 (HTTP) or https://localhost:5001 (HTTPS). Navigate to the Swagger UI at /swagger to test the endpoints.
-
-?? API Endpoints & Usage
-
-All banking endpoints require a Bearer Token obtained via the /api/Auth/login endpoint.
-
-1. Authentication (Public Endpoints)
-
-Endpoint
-
-Method
-
-DTO Input
-
-Description
-
-/api/Auth/register
-
-POST
-
-RegisterUserDto
-
-Creates a new user identity and returns a JWT token immediately.
-
-/api/Auth/login
-
-POST
-
-LoginDto
-
-Authenticates the user and returns a valid JWT token.
-
-Success Response (AuthResponseDto):
+Login
+POST /api/auth/login
 
 {
-  "token": "eyJhbGciOi...",
-  "userId": "guid-of-user",
+  "email": "user@example.com",
+  "password": "StrongPassword123!"
+}
+
+
+Response:
+
+{
+  "token": "JWT_TOKEN_HERE",
+  "userId": "GUID",
   "email": "user@example.com"
 }
 
 
-2. Account Management (Secured Endpoints)
+Use the token in Swagger or Postman:
+Authorization: Bearer <JWT_TOKEN>
 
-All endpoints below require the Authorization: Bearer <token> header.
+💳 API Endpoints
+Operation	Method	Route	Auth	Description
+Create Account	POST	/api/accounts	✅	Creates new account for logged-in user
+Deposit	POST	/api/accounts/deposit	✅	Deposit funds into your account
+Withdraw	POST	/api/accounts/withdraw	✅	Withdraw funds securely
+Transfer	POST	/api/accounts/transfer	✅	Transfer funds between accounts
+Get Account Details	GET	/api/accounts/{accountId}	✅	Retrieve account info (ownership enforced)
+Get Transaction History	GET	/api/accounts/{accountId}/transactions	✅	View recent transactions
+Register	POST	/api/auth/register	❌	Register a new user
+Login	POST	/api/auth/login	❌	Authenticate and receive JWT
+🧠 Example Request: Deposit
+Request
+POST /api/accounts/deposit
+Authorization: Bearer <token>
+Content-Type: application/json
 
-Endpoint
+{
+  "accountNumber": "1234567890",
+  "amount": 200.50
+}
 
-Method
+Response
+{
+  "message": "Deposit successful."
+}
 
-DTO Input
+🧰 Testing
 
-Description
+To run unit tests (xUnit):
 
-/api/Account
+dotnet test
 
-POST
 
-CreateAccountDto
+📌 Recommendation: Add test files for:
 
-Creates a new banking account linked to the authenticated user.
+DepositCommandHandlerTests
 
-/api/Account/{accountId}
+WithdrawalCommandHandlerTests
 
-GET
+TransferCommandHandlerTests
 
-(None)
+CreateAccountCommandHandlerTests
 
-Retrieves details and recent transaction history for the specified account.
+🧩 Design Patterns Used
+Pattern	Purpose
+CQRS (Command Query Responsibility Segregation)	Separates write/read operations
+Repository Pattern	Decouples data access logic
+Dependency Injection	Promotes modularity and testability
+Mediator Pattern (MediatR)	Centralized request handling
+Decorator (Logging/Validation)	Extendable middleware behaviors
+📊 Logging and Monitoring
 
-/api/Account/deposit
+Serilog configured for console logging.
 
-POST
+Middleware logs all requests and exceptions.
 
-DepositDto
+Extendable to use Seq, Azure Application Insights, or Elasticsearch.
 
-Deposits funds into the specified account number.
+⚡ Performance Enhancements
 
-/api/Account/withdrawal
+Redis ready for caching account lookups.
 
-POST
+Async/await used throughout for scalability.
 
-WithdrawalDto
+Transaction-safe EF operations ensure data integrity.
 
-Withdraws funds from the specified account number, subject to balance check.
+🛠️ Future Improvements
 
-/api/Account/transfer
+Add role-based admin panel (Admin, Customer)
 
-POST
+Use Redis for caching transactions
 
-TransferDto
+Integrate real payment gateway (Paystack/Stripe)
 
-Transfers funds between a source account (owned by user) and a destination account.
+Implement background jobs for monthly statement generation
 
-/api/Account/history/{accountId}
+👨‍💻 Author
 
-GET
-
-(None)
-
-Retrieves the full transaction history for the specified account.
+Edward Favour
+📧 [favouredward2511@gmail.com
+]
+🔗 GitHub Profile

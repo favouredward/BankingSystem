@@ -3,57 +3,61 @@ using MediatR;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using BankingSystem.Domain.Enums;
 
 namespace BankingSystem.Application.Features.Accounts
 {
-    // Handler for the TransferCommand.
+    /// <summary>
+    /// Handles transfer operations between two accounts.
+    /// </summary>
     public class TransferCommandHandler : IRequestHandler<TransferCommand, Unit>
     {
         private readonly IAccountRepository _accountRepository;
+        private readonly IExternalPaymentService _paymentService;
+        private readonly ICacheService _cacheService;
 
-        public TransferCommandHandler(IAccountRepository accountRepository)
+        public TransferCommandHandler(
+            IAccountRepository accountRepository,
+            IExternalPaymentService paymentService,
+            ICacheService cacheService)
         {
             _accountRepository = accountRepository;
+            _paymentService = paymentService;
+            _cacheService = cacheService;
         }
 
         public async Task<Unit> Handle(TransferCommand request, CancellationToken cancellationToken)
         {
-            // 1. Validate Source Account Ownership: We must verify the user owns the account they are withdrawing from.
+            // Validate source account ownership
             var sourceAccount = await _accountRepository.GetByAccountNumberAndOwnerIdAsync(
                 request.SourceAccountNumber,
-                request.InitiatingUserId
-            );
+                request.InitiatingUserId);
 
             if (sourceAccount == null)
-            {
-                // Critical security check. Deny access if account is not found OR not owned by the user.
                 throw new InvalidOperationException("Source account not found or access denied.");
-            }
 
-            // 2. Locate Destination Account: Destination account can belong to anyone.
+            // Get destination account (no ownership requirement)
             var destinationAccount = await _accountRepository.GetByAccountNumberAsync(request.DestinationAccountNumber);
 
             if (destinationAccount == null)
-            {
                 throw new InvalidOperationException("Destination account not found.");
-            }
 
             if (sourceAccount.AccountNumber == destinationAccount.AccountNumber)
-            {
                 throw new InvalidOperationException("Cannot transfer funds to the same account.");
-            }
 
-            // 3. Perform transfer logic (uses domain logic for Withdraw/Deposit).
+            // Execute domain-level transfer logic
             sourceAccount.Transfer(destinationAccount, request.Amount);
 
-            // Add transaction records (optional)
-            // sourceAccount.AddTransaction(-request.Amount, TransactionType.TransferOut);
-            // destinationAccount.AddTransaction(request.Amount, TransactionType.TransferIn);
-
             await _accountRepository.SaveChangesAsync();
+
+            // ✅ Invalidate both accounts' caches (source + destination)
+            await _cacheService.RemoveAsync($"account:{sourceAccount.Id}:{request.InitiatingUserId}");
+            await _cacheService.RemoveAsync($"transactions:{sourceAccount.Id}:{request.InitiatingUserId}");
+
+            await _cacheService.RemoveAsync($"account:{destinationAccount.Id}:{destinationAccount.OwnerId}");
+            await _cacheService.RemoveAsync($"transactions:{destinationAccount.Id}:{destinationAccount.OwnerId}");
 
             return Unit.Value;
         }
     }
 }
+ 

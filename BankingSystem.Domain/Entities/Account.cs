@@ -29,6 +29,7 @@ namespace BankingSystem.Domain.Entities
         // Constructor to create a new account.
         public Account(string ownerId, string accountNumber)
         {
+            Id = Guid.NewGuid();
             OwnerId = ownerId; // Takes string OwnerId
             AccountNumber = accountNumber;
             Balance = 0; // New accounts start with a zero balance

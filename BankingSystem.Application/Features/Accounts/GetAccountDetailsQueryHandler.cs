@@ -1,45 +1,69 @@
 ﻿using BankingSystem.Application.Interfaces;
 using BankingSystem.Domain.DTOs;
 using MediatR;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-
 namespace BankingSystem.Application.Features.Accounts
 {
-    // Handler for the GetAccountDetailsQuery.
+    /// <summary>
+    /// Handles secure retrieval of account details with Redis caching.
+    /// Ensures the requesting user owns the account before returning data.
+    /// </summary>
     public class GetAccountDetailsQueryHandler : IRequestHandler<GetAccountDetailsQuery, AccountDto>
     {
         private readonly IAccountRepository _accountRepository;
+        private readonly ICacheService _cacheService;
+        private readonly ILogger<GetAccountDetailsQueryHandler> _logger;
 
-        public GetAccountDetailsQueryHandler(IAccountRepository accountRepository)
+        public GetAccountDetailsQueryHandler(
+            IAccountRepository accountRepository,
+            ICacheService cacheService,
+            ILogger<GetAccountDetailsQueryHandler> logger)
         {
             _accountRepository = accountRepository;
+            _cacheService = cacheService;
+            _logger = logger;
         }
 
         public async Task<AccountDto> Handle(GetAccountDetailsQuery request, CancellationToken cancellationToken)
         {
-            // SECURITY FIX 2: Use the new repository method to ensure the account exists AND 
-            // belongs to the user initiating the query.
-            var account = await _accountRepository.GetByIdAndOwnerIdAsync(
-                request.AccountId,
-                request.InitiatingUserId
-            );
+            string cacheKey = $"account:{request.AccountId}:{request.InitiatingUserId}";
 
+            _logger.LogInformation("Retrieving account details for AccountId: {AccountId}", request.AccountId);
+
+            // ✅ 1. Try to fetch from Redis cache
+            var cachedAccount = await _cacheService.GetAsync<AccountDto>(cacheKey);
+            if (cachedAccount != null)
+            {
+                _logger.LogInformation("Cache hit for AccountId: {AccountId}", request.AccountId);
+                return cachedAccount;
+            }
+
+            // ✅ 2. Retrieve securely from DB (only if user owns this account)
+            var account = await _accountRepository.GetByIdAndOwnerIdAsync(request.AccountId, request.InitiatingUserId);
             if (account == null)
             {
-                // Returning null will cause the controller to return 404/Access Denied, which is secure.
+                _logger.LogWarning("Account not found or access denied for AccountId: {AccountId}", request.AccountId);
                 return null;
             }
 
-            // Map the domain entity to the DTO for the API response.
-            return new AccountDto
+            // ✅ 3. Map to DTO
+            var accountDto = new AccountDto
             {
                 Id = account.Id,
                 AccountNumber = account.AccountNumber,
                 Balance = account.Balance,
-                OwnerId = account.OwnerId // Note: The controller may filter this out later for security
+                OwnerId = account.OwnerId
             };
+
+            // ✅ 4. Cache for 5 minutes
+            await _cacheService.SetAsync(cacheKey, accountDto, TimeSpan.FromMinutes(5));
+            _logger.LogInformation("Account details cached for AccountId: {AccountId}", request.AccountId);
+
+            return accountDto;
         }
     }
 }

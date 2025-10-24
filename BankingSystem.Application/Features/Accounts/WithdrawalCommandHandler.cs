@@ -3,43 +3,47 @@ using MediatR;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using BankingSystem.Domain.Enums;
-using BankingSystem.Domain.DTOs;
 
 namespace BankingSystem.Application.Features.Accounts
 {
-    // Handler for the WithdrawalCommand.
+    /// <summary>
+    /// Handles withdrawal requests from a user's account.
+    /// </summary>
     public class WithdrawalCommandHandler : IRequestHandler<WithdrawalCommand, Unit>
     {
         private readonly IAccountRepository _accountRepository;
+        private readonly IExternalPaymentService _paymentService;
+        private readonly ICacheService _cacheService;
 
-        public WithdrawalCommandHandler(IAccountRepository accountRepository)
+        public WithdrawalCommandHandler(
+            IAccountRepository accountRepository,
+            IExternalPaymentService paymentService,
+            ICacheService cacheService)
         {
             _accountRepository = accountRepository;
+            _paymentService = paymentService;
+            _cacheService = cacheService;
         }
 
         public async Task<Unit> Handle(WithdrawalCommand request, CancellationToken cancellationToken)
         {
-            // SECURITY FIX 2: Use the new repository method to ensure the account exists AND 
-            // belongs to the user initiating the action.
+            // Validate ownership
             var account = await _accountRepository.GetByAccountNumberAndOwnerIdAsync(
                 request.AccountNumber,
-                request.InitiatingUserId
-            );
+                request.InitiatingUserId);
 
             if (account == null)
-            {
-                // Return a generic error message for security.
                 throw new InvalidOperationException("Account not found or access denied.");
-            }
 
-            // Apply the business rule from the Domain layer (includes checking for insufficient funds).
+            // Apply withdrawal domain logic (checks for insufficient funds)
             account.Withdraw(request.Amount);
 
-            // Add a transaction record (optional)
-            // account.AddTransaction(request.Amount, TransactionType.Withdrawal);
-
+            // Save to DB
             await _accountRepository.SaveChangesAsync();
+
+            // ✅ Invalidate related caches
+            await _cacheService.RemoveAsync($"account:{account.Id}:{request.InitiatingUserId}");
+            await _cacheService.RemoveAsync($"transactions:{account.Id}:{request.InitiatingUserId}");
 
             return Unit.Value;
         }

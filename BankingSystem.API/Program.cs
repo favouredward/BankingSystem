@@ -1,4 +1,4 @@
-// File: BankingSystem.API/Program.cs
+﻿// File: BankingSystem.API/Program.cs
 
 using BankingSystem.Application.Features.Accounts;
 using BankingSystem.Application.Interfaces;
@@ -14,21 +14,28 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Text;
-using Microsoft.AspNetCore.Http; // Required for context.Response.WriteAsync
+using BankingSystem.API.Middleware; // Required for context.Response.WriteAsync
 
-// Configure Serilog 
+// ==========================================================
+// ✅ CONFIGURE SERILOG
+// ==========================================================
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateBootstrapLogger();
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Host.UseSerilog((context, services, configuration) => configuration
-    .ReadFrom.Configuration(context.Configuration)
-    .ReadFrom.Services(services)
-    .Enrich.FromLogContext()
-    .WriteTo.Console());
 
-// Add services to the container.
+builder.Host.UseSerilog((context, services, configuration) =>
+    configuration.ReadFrom.Configuration(context.Configuration)
+                 .ReadFrom.Services(services)
+                 .Enrich.FromLogContext()
+                 .WriteTo.Console()
+                 .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
+                 .Enrich.WithProperty("Application", "BankingSystemAPI"));
+
+// ==========================================================
+// ✅ ADD SERVICES TO THE CONTAINER
+// ==========================================================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -44,10 +51,12 @@ builder.Services.AddScoped<IExternalPaymentService, MockExternalPaymentService>(
 builder.Services.AddScoped<IAuthService, AuthService>(); // Used for JWT generation/validation
 
 // Register MediatR: Automatically scans the assembly where CreateAccountCommand lives
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CreateAccountCommand).Assembly));
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(CreateAccountCommand).Assembly));
 
-// --- IDENTITY & AUTHENTICATION ---
-// Use the custom ApplicationUser class
+// ==========================================================
+// ✅ IDENTITY & AUTHENTICATION (JWT)
+// ==========================================================
 builder.Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<BankingSystemDbContext>()
     .AddDefaultTokenProviders();
@@ -75,12 +84,16 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// --- CACHING & SWAGGER ---
+// ==========================================================
+// ✅ CACHING & SWAGGER CONFIGURATION
+// ==========================================================
 builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.Configuration = builder.Configuration.GetConnectionString("RedisConnection");
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
     options.InstanceName = "BankingSystem_";
 });
+
+builder.Services.AddScoped<ICacheService, CacheService>(); // ✅ register cache abstraction
 
 builder.Services.AddSwaggerGen(options =>
 {
@@ -90,7 +103,7 @@ builder.Services.AddSwaggerGen(options =>
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
-        Description = "Please enter a valid token",
+        Description = "Please enter a valid JWT token",
         Name = "Authorization",
         Type = SecuritySchemeType.Http,
         BearerFormat = "JWT",
@@ -114,10 +127,22 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+// ==========================================================
+// ✅ BUILD APPLICATION
+// ==========================================================
 var app = builder.Build();
+
+// ==========================================================
+// ✅ CONFIGURE MIDDLEWARE PIPELINE
+// ==========================================================
+
+// Enable request logging via Serilog
 app.UseSerilogRequestLogging();
 
-// Configure the HTTP request pipeline.
+// Use custom global exception middleware
+app.UseExceptionMiddleware();
+
+// Configure Swagger for dev/testing environments
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -125,11 +150,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Enable Authentication and Authorization
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Map Controller Endpoints
 app.MapControllers();
 
-// Simple, clear exception handling middleware
+// ==========================================================
+// ✅ Fallback Exception Handler (Safety Net)
+// ==========================================================
 app.Use(async (context, next) =>
 {
     try
@@ -144,8 +175,9 @@ app.Use(async (context, next) =>
     }
 });
 
-
-// Cleaned-up run logic: only run if not in a special EF operation context.
+// ==========================================================
+// ✅ CLEAN RUN LOGIC
+// ==========================================================
 if (!app.Environment.EnvironmentName.Contains("ef", StringComparison.OrdinalIgnoreCase))
 {
     app.Run();
