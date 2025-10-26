@@ -1,30 +1,27 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using BankingSystem.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using System.IO;
-using System;
 
 namespace BankingSystem.Infrastructure.Data
 {
-    // This factory tells the 'dotnet ef' tool exactly how to instantiate the DbContext.
     public class BankingSystemDbContextFactory : IDesignTimeDbContextFactory<BankingSystemDbContext>
     {
         public BankingSystemDbContext CreateDbContext(string[] args)
         {
-            // 1. Build configuration to read the connection string from appsettings.json
-            IConfigurationRoot configuration = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory()) // Use the startup project directory
-                .AddJsonFile("appsettings.json")
+            var basePath = Directory.GetCurrentDirectory();
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(basePath)
+                .AddJsonFile(Path.Combine(basePath, "../BankingSystem.API/appsettings.json"), optional: false)
                 .Build();
 
-            // 2. Get the connection string
             var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-            // 3. Configure the DbContext
-            var builder = new DbContextOptionsBuilder<BankingSystemDbContext>();
-            builder.UseSqlServer(connectionString);
+            var optionsBuilder = new DbContextOptionsBuilder<BankingSystemDbContext>();
+            optionsBuilder.UseSqlite(connectionString);
 
-            return new BankingSystemDbContext(builder.Options);
+            return new BankingSystemDbContext(optionsBuilder.Options);
         }
     }
 }

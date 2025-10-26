@@ -1,14 +1,19 @@
-﻿using BankingSystem.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿// File: BankingSystem.Infrastructure/Data/BankingSystemDbContext.cs
 
+using BankingSystem.Domain.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace BankingSystem.Infrastructure.Data
 {
-    // Inheriting from IdentityDbContext provides all the AspNetIdentity tables automatically.
+    /// <summary>
+    /// Main EF Core database context for the Banking System.
+    /// Uses SQLite for persistence and integrates with ASP.NET Identity.
+    /// </summary>
     public class BankingSystemDbContext : IdentityDbContext
     {
-        public BankingSystemDbContext(DbContextOptions<BankingSystemDbContext> options) : base(options)
+        public BankingSystemDbContext(DbContextOptions<BankingSystemDbContext> options)
+            : base(options)
         {
         }
 
@@ -17,14 +22,15 @@ namespace BankingSystem.Infrastructure.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Configure the relationship between Account and Transaction.
+            // Account–Transaction relationship
             modelBuilder.Entity<Account>()
                 .ToTable("Accounts")
                 .HasMany(a => a.Transactions)
                 .WithOne()
-                .HasForeignKey(t => t.AccountId);
+                .HasForeignKey(t => t.AccountId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            // Define precision for decimal properties to prevent truncation and rounding errors
+            // Decimal precision
             modelBuilder.Entity<Account>()
                 .Property(a => a.Balance)
                 .HasPrecision(18, 2);
@@ -37,7 +43,7 @@ namespace BankingSystem.Infrastructure.Data
                 .Property(t => t.NewBalance)
                 .HasPrecision(18, 2);
 
-            // Calling base.OnModelCreating is essential for IdentityDbContext to configure Identity tables
+            // Important: Keep this for Identity tables
             base.OnModelCreating(modelBuilder);
         }
     }

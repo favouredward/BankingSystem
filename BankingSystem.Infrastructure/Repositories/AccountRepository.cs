@@ -24,9 +24,7 @@ namespace BankingSystem.Infrastructure.Repositories
             _dbContext = dbContext;
         }
 
-        /// <summary>
-        /// Retrieves an account by its GUID ID, enforcing ownership via the provided ownerId.
-        /// </summary>
+      
         public async Task<Account> GetByIdAndOwnerIdAsync(Guid id, string ownerId)
         {
             return await _dbContext.Accounts
@@ -34,10 +32,7 @@ namespace BankingSystem.Infrastructure.Repositories
                 .FirstOrDefaultAsync(a => a.Id == id && a.OwnerId == ownerId);
         }
 
-        /// <summary>
-        /// Retrieves an account by its AccountNumber, enforcing ownership via the provided ownerId.
-        /// Used for deposit and withdrawal validation.
-        /// </summary>
+        
         public async Task<Account> GetByAccountNumberAndOwnerIdAsync(string accountNumber, string ownerId)
         {
             return await _dbContext.Accounts
@@ -45,10 +40,7 @@ namespace BankingSystem.Infrastructure.Repositories
                 .FirstOrDefaultAsync(a => a.AccountNumber == accountNumber && a.OwnerId == ownerId);
         }
 
-        /// <summary>
-        /// Retrieves an account by its AccountNumber (no ownership check).
-        /// Used for transfer destination account lookup.
-        /// </summary>
+        
         public async Task<Account> GetByAccountNumberAsync(string accountNumber)
         {
             return await _dbContext.Accounts
@@ -56,13 +48,7 @@ namespace BankingSystem.Infrastructure.Repositories
                 .FirstOrDefaultAsync(a => a.AccountNumber == accountNumber);
         }
 
-        // -------------------------------------------------------------------
-        // 🧩 NEW IMPLEMENTATIONS BELOW
-        // -------------------------------------------------------------------
-
-        /// <summary>
-        /// Retrieves an account by its ID without ownership enforcement (internal use).
-        /// </summary>
+        
         public async Task<Account> GetByIdAsync(Guid id)
         {
             return await _dbContext.Accounts
@@ -70,9 +56,7 @@ namespace BankingSystem.Infrastructure.Repositories
                 .FirstOrDefaultAsync(a => a.Id == id);
         }
 
-        /// <summary>
-        /// Retrieves all accounts belonging to a specific user (OwnerId).
-        /// </summary>
+        
         public async Task<List<Account>> GetAccountsByOwnerIdAsync(string ownerId)
         {
             return await _dbContext.Accounts
@@ -81,9 +65,7 @@ namespace BankingSystem.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        /// <summary>
-        /// Retrieves the transaction history for a specific account, filtered by owner.
-        /// </summary>
+       
         public async Task<ICollection<Transaction>> GetTransactionHistoryByAccountIdAndOwnerIdAsync(Guid accountId, string ownerId)
         {
             var account = await _dbContext.Accounts
@@ -93,10 +75,7 @@ namespace BankingSystem.Infrastructure.Repositories
             return account?.Transactions?.ToList() ?? new List<Transaction>();
         }
 
-        // -------------------------------------------------------------------
-        // 🧩 BASIC CRUD OPERATIONS
-        // -------------------------------------------------------------------
-
+        
         public async Task<IEnumerable<Account>> GetAllAsync()
         {
             return await _dbContext.Accounts
