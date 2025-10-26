@@ -152,15 +152,29 @@ var app = builder.Build();
 app.UseSerilogRequestLogging();
 app.UseExceptionMiddleware();
 
-if (app.Environment.IsDevelopment())
+// Enable Swagger in all environments for Render deployment
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "BankingSystem API v1");
+    c.RoutePrefix = string.Empty; // Serve Swagger UI at root (https://bankingsystem101.onrender.com/)
+});
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ==========================================================
+// ✅ HEALTH CHECK & ROOT ENDPOINT
+// ==========================================================
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "Healthy",
+    timestamp = DateTime.UtcNow,
+    service = "BankingSystem API",
+    version = "v1"
+})).AllowAnonymous();
+
 app.MapControllers();
 
 // Global exception fallback (safety net)
