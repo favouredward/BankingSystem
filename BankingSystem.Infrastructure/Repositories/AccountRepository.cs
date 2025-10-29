@@ -1,6 +1,4 @@
-﻿// File: BankingSystem.Infrastructure/Repositories/AccountRepository.cs
-
-using BankingSystem.Application.Interfaces;
+﻿using BankingSystem.Application.Interfaces;
 using BankingSystem.Domain.Entities;
 using BankingSystem.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -11,10 +9,6 @@ using System.Linq;
 
 namespace BankingSystem.Infrastructure.Repositories
 {
-    /// <summary>
-    /// Repository responsible for performing all Account-related database operations.
-    /// Includes strong ownership checks to prevent unauthorized access.
-    /// </summary>
     public class AccountRepository : IAccountRepository
     {
         private readonly BankingSystemDbContext _dbContext;
@@ -85,13 +79,12 @@ namespace BankingSystem.Infrastructure.Repositories
 
         public async Task AddAsync(Account account)
         {
-            // Prevent duplicate accounts for same user
-            // ✅ Ensure user doesn’t already have an account
+            
             var existing = await _dbContext.Accounts.FirstOrDefaultAsync(a => a.OwnerId == account.OwnerId);
             if (existing != null)
                 return;
 
-            // ✅ Force OwnerId to persist as string (IdentityUser.Id)
+            
             account = new Account(account.OwnerId, account.AccountNumber);
             await _dbContext.Accounts.AddAsync(account);
         }
@@ -112,7 +105,7 @@ namespace BankingSystem.Infrastructure.Repositories
             await _dbContext.Transactions.AddAsync(transaction);
         }
 
-        // Interface requirement
+      
         Task IAccountRepository.SaveChangesAsync()
         {
             return SaveChangesAsync();

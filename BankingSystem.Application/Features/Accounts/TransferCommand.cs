@@ -4,14 +4,13 @@ using System;
 
 namespace BankingSystem.Application.Features.Accounts
 {
-    // Command to handle a transfer between two accounts.
+   
     public class TransferCommand : IRequest<Unit>
     {
         public string SourceAccountNumber { get; private set; }
         public string DestinationAccountNumber { get; private set; }
         public decimal Amount { get; private set; }
 
-        // SECURITY FIX 1: Property to hold the authenticated user's ID.
         public string InitiatingUserId { get; set; }
 
         public TransferCommand(TransferDto dto)

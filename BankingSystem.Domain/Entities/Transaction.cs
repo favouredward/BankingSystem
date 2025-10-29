@@ -13,7 +13,6 @@ namespace BankingSystem.Domain.Entities
         public decimal NewBalance { get; private set; }
         public DateTime   Timestamp { get; set; }
 
-        // Private constructor for Entity Framework Core.
         private Transaction() { }
 
         public Transaction(Guid accountId, decimal amount, TransactionType type, decimal newBalance)

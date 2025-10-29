@@ -1,6 +1,4 @@
-﻿// File: BankingSystem.API/Program.cs
-
-using BankingSystem.Application.Features.Accounts;
+﻿using BankingSystem.Application.Features.Accounts;
 using BankingSystem.Application.Interfaces;
 using BankingSystem.Domain.Entities;
 using BankingSystem.Infrastructure.Data;
@@ -22,9 +20,6 @@ Log.Logger = new LoggerConfiguration()
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ==========================================================
-// ✅ SERILOG CONFIGURATION
-// ==========================================================
 builder.Host.UseSerilog((context, services, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration)
                  .ReadFrom.Services(services)
@@ -33,14 +28,10 @@ builder.Host.UseSerilog((context, services, configuration) =>
                  .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day)
                  .Enrich.WithProperty("Application", "BankingSystemAPI"));
 
-// ==========================================================
-// ✅ ADD SERVICES
-// ==========================================================
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// --- DATABASE & REPOSITORIES ---
-// Use SQLite for Docker and local development
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<BankingSystemDbContext>(options =>
@@ -54,19 +45,15 @@ builder.Services.AddDbContext<BankingSystemDbContext>(options =>
     }
 });
 
-// Repositories & Services
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<IExternalPaymentService, MockExternalPaymentService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICacheService, CacheService>();
 
-// MediatR registration (Command/Query handlers)
+
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(CreateAccountCommand).Assembly));
 
-// ==========================================================
-// ✅ IDENTITY + JWT AUTH
-// ==========================================================
 builder.Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<BankingSystemDbContext>()
     .AddDefaultTokenProviders();
@@ -94,18 +81,12 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// ==========================================================
-// ✅ REDIS CACHE
-// ==========================================================
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("RedisConnection");
     options.InstanceName = "BankingSystem_";
 });
 
-// ==========================================================
-// ✅ SWAGGER CONFIGURATION
-// ==========================================================
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -141,14 +122,10 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// ==========================================================
-// ✅ BUILD APP
-// ==========================================================
+
 var app = builder.Build();
 
-// ==========================================================
-// ✅ MIDDLEWARE PIPELINE
-// ==========================================================
+
 app.UseSerilogRequestLogging();
 app.UseExceptionMiddleware();
 
@@ -164,9 +141,6 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ==========================================================
-// ✅ HEALTH CHECK & ROOT ENDPOINT
-// ==========================================================
 app.MapGet("/health", () => Results.Ok(new
 {
     status = "Healthy",
@@ -177,7 +151,6 @@ app.MapGet("/health", () => Results.Ok(new
 
 app.MapControllers();
 
-// Global exception fallback (safety net)
 app.Use(async (context, next) =>
 {
     try

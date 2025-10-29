@@ -6,36 +6,26 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BankingSystem.Domain.Entities
 {
-    // A simple class representing a bank account.
-    // The "Domain" layer contains the core business rules and entities.
-    public class Account : BaseEntity // Assuming BaseEntity provides the Id property
+    
+    public class Account : BaseEntity 
     {
-        // Unique account number
         public string AccountNumber { get; private set; } = string.Empty;
 
-        // The current balance of the account
+       
         [Column(TypeName = "decimal(18, 2)")] 
         public decimal Balance { get; private set; }
-
-        // FOREIGN KEY FIX: The OwnerId property is a string to link directly to the IdentityUser.Id.
         public string OwnerId { get; private set; }
-
-        // Collection property for EF Core mapping
         public ICollection<Transaction> Transactions { get; private set; } = new List<Transaction>();
-
-        // Required for EF Core to instantiate the entity
         private Account() { }
-
-        // Constructor to create a new account.
         public Account(string ownerId, string accountNumber)
         {
             Id = Guid.NewGuid();
-            OwnerId = ownerId; // Takes string OwnerId
+            OwnerId = ownerId; 
             AccountNumber = accountNumber;
-            Balance = 0; // New accounts start with a zero balance
+            Balance = 0; 
         }
 
-        // Method to handle a deposit.
+        
         public void Deposit(decimal amount)
         {
             if (amount <= 0)
@@ -45,7 +35,6 @@ namespace BankingSystem.Domain.Entities
             Balance += amount;
         }
 
-        // Method to handle a withdrawal.
         public void Withdraw(decimal amount)
         {
             if (amount <= 0)
@@ -61,13 +50,11 @@ namespace BankingSystem.Domain.Entities
             Balance -= amount;
         }
 
-        // Method to transfer funds from this account to another.
         public void Transfer(Account destinationAccount, decimal amount)
         {
-            // First, check if we can withdraw from this account.
+           
             this.Withdraw(amount);
 
-            // If the withdrawal is successful, deposit into the destination account.
             destinationAccount.Deposit(amount);
         }
 

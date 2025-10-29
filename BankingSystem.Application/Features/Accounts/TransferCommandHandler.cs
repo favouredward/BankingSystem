@@ -6,9 +6,6 @@ using System.Threading.Tasks;
 
 namespace BankingSystem.Application.Features.Accounts
 {
-    /// <summary>
-    /// Handles transfer operations between two accounts.
-    /// </summary>
     public class TransferCommandHandler : IRequestHandler<TransferCommand, Unit>
     {
         private readonly IAccountRepository _accountRepository;
@@ -27,7 +24,6 @@ namespace BankingSystem.Application.Features.Accounts
 
         public async Task<Unit> Handle(TransferCommand request, CancellationToken cancellationToken)
         {
-            // Validate source account ownership
             var sourceAccount = await _accountRepository.GetByAccountNumberAndOwnerIdAsync(
                 request.SourceAccountNumber,
                 request.InitiatingUserId);
@@ -35,7 +31,6 @@ namespace BankingSystem.Application.Features.Accounts
             if (sourceAccount == null)
                 throw new InvalidOperationException("Source account not found or access denied.");
 
-            // Get destination account (no ownership requirement)
             var destinationAccount = await _accountRepository.GetByAccountNumberAsync(request.DestinationAccountNumber);
 
             if (destinationAccount == null)
@@ -44,12 +39,10 @@ namespace BankingSystem.Application.Features.Accounts
             if (sourceAccount.AccountNumber == destinationAccount.AccountNumber)
                 throw new InvalidOperationException("Cannot transfer funds to the same account.");
 
-            // Execute domain-level transfer logic
             sourceAccount.Transfer(destinationAccount, request.Amount);
 
             await _accountRepository.SaveChangesAsync();
 
-            // ✅ Invalidate both accounts' caches (source + destination)
             await _cacheService.RemoveAsync($"account:{sourceAccount.Id}:{request.InitiatingUserId}");
             await _cacheService.RemoveAsync($"transactions:{sourceAccount.Id}:{request.InitiatingUserId}");
 

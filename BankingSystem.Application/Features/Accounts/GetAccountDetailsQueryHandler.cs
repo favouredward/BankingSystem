@@ -8,10 +8,6 @@ using System.Threading.Tasks;
 
 namespace BankingSystem.Application.Features.Accounts
 {
-    /// <summary>
-    /// Handles secure retrieval of account details with Redis caching.
-    /// Ensures the requesting user owns the account before returning data.
-    /// </summary>
     public class GetAccountDetailsQueryHandler : IRequestHandler<GetAccountDetailsQuery, AccountDto>
     {
         private readonly IAccountRepository _accountRepository;
@@ -34,7 +30,6 @@ namespace BankingSystem.Application.Features.Accounts
 
             _logger.LogInformation("Retrieving account details for AccountId: {AccountId}", request.AccountId);
 
-            // ✅ 1. Try to fetch from Redis cache
             var cachedAccount = await _cacheService.GetAsync<AccountDto>(cacheKey);
             if (cachedAccount != null)
             {
@@ -42,7 +37,6 @@ namespace BankingSystem.Application.Features.Accounts
                 return cachedAccount;
             }
 
-            // ✅ 2. Retrieve securely from DB (only if user owns this account)
             var account = await _accountRepository.GetByIdAndOwnerIdAsync(request.AccountId, request.InitiatingUserId);
             if (account == null)
             {
@@ -50,7 +44,6 @@ namespace BankingSystem.Application.Features.Accounts
                 return null;
             }
 
-            // ✅ 3. Map to DTO
             var accountDto = new AccountDto
             {
                 Id = account.Id,
@@ -59,7 +52,6 @@ namespace BankingSystem.Application.Features.Accounts
                 OwnerId = account.OwnerId
             };
 
-            // ✅ 4. Cache for 5 minutes
             await _cacheService.SetAsync(cacheKey, accountDto, TimeSpan.FromMinutes(5));
             _logger.LogInformation("Account details cached for AccountId: {AccountId}", request.AccountId);
 

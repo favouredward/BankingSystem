@@ -10,7 +10,6 @@ using BankingSystem.Domain.DTOs;
 
 namespace BankingSystem.Application.Features.Accounts
 {
-    // The handler to get an account by its account number.
     public class GetAccountByNumberQueryHandler : IRequestHandler<GetAccountByNumberQuery, AccountDetailsDto>
     {
         private readonly IAccountRepository _accountRepository;
@@ -29,7 +28,7 @@ namespace BankingSystem.Application.Features.Accounts
 
             if (!string.IsNullOrEmpty(cachedData))
             {
-                // Fix CS8603: Add null-forgiving operator
+                
                 return JsonSerializer.Deserialize<AccountDetailsDto>(cachedData)!;
             }
 
@@ -40,7 +39,6 @@ namespace BankingSystem.Application.Features.Accounts
                 throw new InvalidOperationException("Account not found.");
             }
 
-            // Fix CS0029: Convert OwnerId (string) to Guid
             var accountDto = new AccountDetailsDto
             {
                 Id = account.Id,

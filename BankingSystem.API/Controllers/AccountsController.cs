@@ -12,7 +12,7 @@ namespace BankingSystem.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // All methods here require a valid JWT token
+    [Authorize] 
     public class AccountsController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -22,16 +22,12 @@ namespace BankingSystem.API.Controllers
             _mediator = mediator;
         }
 
-        /// <summary>
-        /// Helper method to retrieve the authenticated user's ID from the JWT token.
-        /// </summary>
+        
         private string GetCurrentUserId()
         {
-            // The ClaimTypes.NameIdentifier (sub) is the unique IdentityUser ID (OwnerId)
             return User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
 
-        // POST api/accounts
         [HttpPost]
         public async Task<IActionResult> CreateAccount()
         {
@@ -72,7 +68,7 @@ namespace BankingSystem.API.Controllers
             }
         }
 
-        // POST api/accounts/deposit
+  
         [HttpPost("deposit")]
         public async Task<IActionResult> Deposit([FromBody] DepositDto dto)
         {
@@ -101,7 +97,6 @@ namespace BankingSystem.API.Controllers
             }
         }
 
-        // POST api/accounts/withdraw
         [HttpPost("withdraw")]
         public async Task<IActionResult> Withdraw([FromBody] WithdrawalDto dto)
         {
@@ -128,7 +123,6 @@ namespace BankingSystem.API.Controllers
             }
         }
 
-        // POST api/accounts/transfer
         [HttpPost("transfer")]
         public async Task<IActionResult> Transfer([FromBody] TransferDto dto)
         {
@@ -157,7 +151,6 @@ namespace BankingSystem.API.Controllers
         }
 
 
-        // GET api/accounts/{accountId}
         [HttpGet("{accountId}")]
         public async Task<IActionResult> GetAccountDetails(Guid accountId)
         {
@@ -189,7 +182,7 @@ namespace BankingSystem.API.Controllers
             }
         }
 
-        // GET api/accounts/{accountId}/transactions
+      
         [HttpGet("{accountId}/transactions")]
         public async Task<IActionResult> GetTransactionHistory(Guid accountId)
         {

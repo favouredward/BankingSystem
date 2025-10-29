@@ -10,10 +10,6 @@ using System.Threading.Tasks;
 
 namespace BankingSystem.Application.Features.Accounts
 {
-    /// <summary>
-    /// Retrieves a user's account transaction history.
-    /// Implements Redis caching and ownership validation.
-    /// </summary>
     public class GetTransactionHistoryQueryHandler : IRequestHandler<GetTransactionHistoryQuery, IEnumerable<TransactionDto>>
     {
         private readonly IAccountRepository _accountRepository;
@@ -36,7 +32,6 @@ namespace BankingSystem.Application.Features.Accounts
 
             _logger.LogInformation("Fetching transaction history for AccountId: {AccountId}", request.AccountId);
 
-            // ✅ 1. Check cache first
             var cachedTransactions = await _cacheService.GetAsync<IEnumerable<TransactionDto>>(cacheKey);
             if (cachedTransactions != null)
             {
@@ -44,7 +39,6 @@ namespace BankingSystem.Application.Features.Accounts
                 return cachedTransactions;
             }
 
-            // ✅ 2. Fetch securely from DB (ownership check)
             var transactions = await _accountRepository.GetTransactionHistoryByAccountIdAndOwnerIdAsync(request.AccountId, request.InitiatingUserId);
             if (transactions == null)
             {
@@ -52,7 +46,6 @@ namespace BankingSystem.Application.Features.Accounts
                 return null;
             }
 
-            // ✅ 3. Map to DTO
             var transactionDtos = transactions.Select(t => new TransactionDto
             {
                 Id = t.Id,
@@ -63,7 +56,6 @@ namespace BankingSystem.Application.Features.Accounts
                 NewBalance = t.NewBalance
             }).ToList();
 
-            // ✅ 4. Cache result for 3 minutes
             await _cacheService.SetAsync(cacheKey, transactionDtos, TimeSpan.FromMinutes(3));
             _logger.LogInformation("Transaction history cached for AccountId: {AccountId}", request.AccountId);
 

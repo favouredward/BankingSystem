@@ -6,9 +6,7 @@ using System.Threading.Tasks;
 
 namespace BankingSystem.Infrastructure.Services
 {
-    /// <summary>
-    /// Provides Redis-based caching functionality for the BankingSystem API.
-    /// </summary>
+ 
     public class CacheService : ICacheService
     {
         private readonly IDistributedCache _cache;

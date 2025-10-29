@@ -72,7 +72,7 @@ namespace BankingSystem.Infrastructure.Services
                 new Claim(ClaimTypes.Name, user.Email)
             };
 
-            // add roles
+            
             var roles = await _userManager.GetRolesAsync(user);
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 

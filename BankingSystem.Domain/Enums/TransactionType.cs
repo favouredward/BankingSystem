@@ -1,6 +1,4 @@
-﻿// File: BankingSystem.Domain/Enums/TransactionType.cs
-
-namespace BankingSystem.Domain.Enums
+﻿namespace BankingSystem.Domain.Enums
 {
     public enum TransactionType
     {
@@ -8,7 +6,6 @@ namespace BankingSystem.Domain.Enums
         Withdrawal,
         TransferIn,
         TransferOut,
-        // Used for account creation, often recorded as 0 or simply not logged
         InitialBalance 
     }
 }

@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 namespace BankingSystem.Domain.DTOs
 {
-    // DTO to hold the account details we want to return from the API.
     public class AccountDetailsDto
     {
         public Guid Id { get; set; }

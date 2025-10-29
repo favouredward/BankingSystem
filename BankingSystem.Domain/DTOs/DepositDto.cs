@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BankingSystem.Domain.DTOs
 {
-    // DTO to carry deposit data from the API request.
     public class DepositDto
     {
         [Required]
