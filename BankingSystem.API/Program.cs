@@ -129,7 +129,6 @@ var app = builder.Build();
 app.UseSerilogRequestLogging();
 app.UseExceptionMiddleware();
 
-// Enable Swagger in all environments for Render deployment
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
